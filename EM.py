@@ -9,8 +9,6 @@ def runEM(data, iterations):
 	
 	likelihood = 0.0
 	log_likelihood = 0.0
-	post_params = None
-	ml_params = None
 	old_params = None
 	L = 1000000
 	hidden_states = {1,2,3,4}
@@ -128,4 +126,7 @@ def m_step(params, X, x, Q):
 		while abs((theta_new - theta_old) > threshold):
 			repeat
 	"""
+
+
+print runEM(data, 15)
 
