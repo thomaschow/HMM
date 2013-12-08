@@ -1,17 +1,20 @@
 """
-define functions for E and M steps
-define runEM function that runs E and M steps 15 times
-
-"""
-
-
-"""
 X is observed data
 Q is unobserved (latents) states
 theta is parameters
 """
 
-def EM(X, x, Q, data, old_params):
+
+def runEM(data, iterations):
+	
+	likelihood = 0.0
+	log_likelihood = 0.0
+	post_params = None
+	ml_params = None
+	old_params = None
+	L = 1000000
+	hidden_states = {1,2,3,4}
+	length = len(hidden_states)
 
 	"""
 	Read data
@@ -24,29 +27,26 @@ def EM(X, x, Q, data, old_params):
 	theta_0 = (pi_i, a_ij, e_i_x)
 
 	"""
-	likelihood = 0.0
-	log_likelihood = 0.0
-	post_params = None
-	ml_params = None
-	old_params = None
 
-	L = 1000000
-
-	hidden_states = {1,2,3,4}
-	length = len(hidden_states)
-
-	num_iter = 15
-
-	for i in range(num_iter):
-		post_params = e_step(params, X, x, Q, data)
-		new_params = m_step(post_params, X, x, Q, data)
+	old_params = pi_i, a_ij, e_i_x
+	for i in range(iterations):
+		new_params, likelihood = EM(X, x, Q, old_params)
 		old_params = new_params
+
+def EM(X, x, Q, old_params):
+
+	post_params = e_step(params, X, x, Q)
+	new_params = m_step(post_params, X, x, Q)
+	old_params = new_params
+
+	return new_params, likelihood
+
 
 	"""
 	Determine log-likelihood and print
 	"""
 
-def e_step(params, X, x, Q, data):
+def e_step(params, X, x, Q):
 	f = []
 	b = []
 	for l in range(L-1):
@@ -92,7 +92,7 @@ def e_step(params, X, x, Q, data):
 	posterior_params = (Pi_k, A_ij, E_k)
 	return posterior_params
 
-def m_step(params, X, x, Q, data):
+def m_step(params, X, x, Q):
 	pi_k_ml = []
 	for i in range(length):
 		pi_k_ml.append(0.0)
