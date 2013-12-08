@@ -44,7 +44,11 @@ def EM(X, x, Q, data):
 				likelihood = sum(f[L-1])
 
 	"""stationary"""
-	PI_k = [f[0][k] * b[0][k] / likelihood for k in range(length)]
+	Pi_k = []
+	for i in range(length):
+		Pi_k.append(0.0)
+	for k in range(length):
+		Pi_k[k] = f[0][k] * b[0][k] / likelihood
 
 	"""transition"""
 	A_ij = []
@@ -57,18 +61,22 @@ def EM(X, x, Q, data):
 	for t in range(L-1):
 		for i in range(length):
 			for j in range(length):
-				A_ij[i][j] += f[t][i] * b[t+1][j] * a[i][j] * e[j][t+1] / likelihood
+				A_ij[i][j] = f[t][i] * b[t+1][j] * a[i][j] * e[j][t+1] / likelihood
 
 	"""emission"""
-	E_k = [0.0, 0.0]
-	for t in range(L-1):
-		if x[t] == 'I':
-			E_k[0] += [f[t][k] * b[t][k] / likelihood for k in range(length)]
-		elif x[t] == 'D':
-			E_k[1] += [f[t][k] * b[t][k] / likelihood for k in range(length)]
+	E_k = []
+	for i in range(length):
+		E = []
+		for j in range(len(X))):
+			E.append(0.0)
+		E_k.append(E)
 
-
-
+	for k in range(length):
+		for t in range(L-1):
+			if x[t] == 'I':
+				E_k[k][0] = f[t][k] * b[t][k] / likelihood
+			elif x[t] == 'D':
+				E_k[k][1] = f[t][k] * b[t][k] / likelihood
 
 	"""
 	m-step
@@ -76,6 +84,13 @@ def EM(X, x, Q, data):
 	set theta_new = theta_old
 	theta_new = (new_stationary, new_transition, new_emission)
 	"""
+
+	for k in range(length):
+		pi_k_ml[k] = Pi_k[k] / sum(Pi_k[j] for j in range(length))
+		e_k_ml[k][0] = E_k[k][0] / sum(E_k[k][sig] for sig in range(len(X)))
+		e_k_ml[k][1] = E_k[k][1] / sum(E_k[k][sig] for sig in range(len(X)))
+	a_ij_ml[i][j] = A_ij[i][j] / sum(A_ij[i][r] for r in range(length))
+
 
 	"""for i in range(15):
 		repeat
