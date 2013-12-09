@@ -47,13 +47,12 @@ def EM(X, x, Q, old_params):
 def e_step(params, X, x, Q):
 	f = []
 	b = []
-	for l in range(L-1):
-		for i in range(length):
-			for j in range(length):
-				f = forwards(params, X, Q, x)
-				b = backwards(params, X, Q, x)
-				likelihood = sum(f[L-1])
 
+	f = forwards(params, X, Q, x)
+	b = backwards(params, X, Q, x)
+				
+	likelihood = sum(f[L-1].values())
+	
 	"""stationary"""
 	Pi_k = []
 	for i in range(length):

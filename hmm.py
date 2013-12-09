@@ -1,4 +1,4 @@
-import sys
+import sys, math
 
 #This method reads in the initial parameters of ps5 and returns 4 arguments: parameters, observed_space, hidden_space, emissions.
 #parameters[0] = marginal probabilities, parameters[1] = transition probabilities, parameters[2] = emission probabilities
@@ -41,64 +41,93 @@ def readParams():
 			emitProb[int(temp[0])] = (float(temp[1]), float(temp[2]))	
 
 	parameters = [margProb, transProb, emitProb]
-	observations = ['I','D']
+	observation_space = ['I','D']
 	hidden_space = [1, 2, 3, 4]
 
-	return parameters, observations, hidden_space, emissions 
+	return parameters, observation_space , hidden_space, emissions 
+
 
 #forward decoding
 def forward(parameters, observation_space, hidden_space, emissions):
 	f = []
-	
+	logf = []	
 	marg = parameters[0]
 	trans = parameters[1]
 	emit = parameters[2]
 	f.append({})
+	logf.append({})
 	for state in hidden_space:
-		f[0][state] = (emit[state][observations.index(emissions[0])] * marg[state])
+		f[0][state] = (emit[state][observation_space.index(emissions[0])] * marg[state])
+		logf[0][state] =  math.log(f[0][state]) 
 	
 	summation = 0
+	logsummation = []
+	
 	for t in xrange(1, len(emissions)):
 		f.append({})
+		logf.append({})
 		for j in hidden_space:
+			logsummation = []
 			for i in hidden_space:
-				summation = summation + f[t-1][i] * trans[i][j]
-			f[t][j] = (emit[j][observations.index(emissions[t])] * summation)
-			summation = 0 	
-
-	for prob in f:
-		print prob 
-
-	print len(f)
-	return f
+				logsummation.append(logf[t-1][i] + math.log(trans[i][j]))
+			m = max(logsummation)
+			for a in xrange(len(logsummation)):
+				logsummation[a] = math.exp(logsummation[a] - m)
+			logf[t][j] = math.log(emit[j][observation_space.index(emissions[t])])  + m + math.log(sum(logsummation)) 
+	fList = []
+	llf = 0
+	for k in hidden_space:
+		fList.append(logf[len(emissions)-1][k])
+	maxF = max(fList)
+	for item in fList:
+		llf = llf + math.exp(item - maxF)
+	llf = maxF + math.log(llf)
+	#print len(f)
+	return logf, llf
 
 def backward(parameters, observation_space, hidden_space, emissions):
 	
 	b = [0 for x in xrange(len(emissions))] 	
+	logb = [0 for x in xrange(len(emissions))] 	
 	marg = parameters[0]
 	trans = parameters[1]
 	emit = parameters[2]
 	
 	b[len(emissions) - 1] = {} 
-	
+	logb[len(emissions) - 1] = {} 
+
 	for state in hidden_space:
 		b[len(emissions) - 1][state] = 1
-	summation = 0
+		logb[len(emissions) - 1][state] = 0
+	logsummation = []
 	for t in xrange(len(emissions) - 2, -1, -1):
 		b[t] = {}
+		logb[t] = {}
 		for i in hidden_space:
+			logsummation = []
 			for j in hidden_space:
-				summation = summation + b[t+1][j] * trans[i][j]* emit[j][observation_space.index(emissions[t+1])]
-			b[t][i] =  summation
-			summation = 0 	
-	print len(b)
+				logsummation.append(logb[t+1][j] + math.log(trans[i][j]) + math.log(emit[j][observation_space.index(emissions[t+1])])) 	 
+			m = max(logsummation)
+			for a in xrange(len(logsummation)):
+				logsummation[a] = math.exp(logsummation[a] - m)			
+			logb[t][i] = m + math.log(sum(logsummation))
+	"""print len(b)
 	for i in range( 10):
-		print b[i]
+		print b[i] """
+	bList = []
+	llb = 0	
+	for k in hidden_space:
+		bList.append(math.log(emit[k][observation_space.index(emissions[0])]) + math.log(marg[k]) + logb[0][k])
+	maxB = max(bList)
+	for a in xrange(len(bList)):
+		llb = llb + math.exp(bList[a] - maxB)
+	llb = maxB + math.log(llb)
+	return logb, llb
 
-	return b
+parameters, observation_space, hidden_space, emissions = readParams()
 
-parameters, observations, hidden_space, emissions = readParams()
+logf, llf = forward(parameters, observation_space, hidden_space, emissions)
+logb, llb = backward(parameters, observation_space, hidden_space, emissions)
 
-forward(parameters, observations, hidden_space, emissions)
-
-
+print llf
+print llb
