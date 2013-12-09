@@ -189,7 +189,7 @@ def e_step(params, X, x, Q):
 	"""stationary"""
 	Pi_k = {}
 	exp_Pi_k = {}
-	for k in range(1, 1 + length):
+	for k in Q: 
 		# Pi_k[k] = f[0][k] * b[0][k] / likelihood
 		Pi_k[k] = f_log[0][k] + b_log[0][k] - f_log_lk
 		Pi_k[k] = math.exp(Pi_k[k])
@@ -198,9 +198,9 @@ def e_step(params, X, x, Q):
 
 	"""transition"""
 	A_ij = {}
-	for j in range(1, 1 + length):
+	for j in Q: 
 		A_ij[j] = {}
-	for i in range(1, 1 + length):
+	for i in Q: 
 		for j in range(1, 1 + length):
 			A_ij_sum = []
 			for t in range(L-1):
@@ -218,9 +218,9 @@ def e_step(params, X, x, Q):
 	"""emission"""
 	E_k = {}
 	observed = ['I', 'D']
-	for j in range(1, 1 + length):
+	for j in Q: 
 		E_k[j] = [0.0, 0.0]
-	for k in range(1, 1 + length):
+	for k in Q: 
 		for obs in observed:
 			E_k_sum = []
 			for t in range(L):
@@ -251,20 +251,20 @@ def m_step(params, X, x, Q):
 	pi_k_ml = {}
 
 	a_ij_ml = {}
-	for j in range(1, 1 + length):
+	for j in Q:
 		a_ij_ml[j] = {}
 
 	e_k_ml = {}
-	for j in range(1, 1 + length):
+	for j in Q: 
 		e_k_ml[j] = [0.0, 0.0]
 
 	Pi_k, A_ij, E_k = params[0], params[1], params[2]
 
 	pi_k_ml = Pi_k
-	for i in range(1, 1+length):
-		for j in range(1, 1+length):
-			a_ij_ml[i][j] = A_ij[i][j] / sum([A_ij[i][r] for r in range(1, 1 + length)])
-	for k in range(1, 1+length):
+	for i in Q:
+		for j in Q: 
+			a_ij_ml[i][j] = A_ij[i][j] / sum([A_ij[i][r] for r in Q]) 
+	for k in Q: 
 		e_k_ml[k][0] = E_k[k][0] / sum([E_k[k][sig] for sig in range(2)])
 		e_k_ml[k][1] = E_k[k][1] / sum([E_k[k][sig] for sig in range(2)])
 
@@ -323,7 +323,7 @@ def posterior_decoding (params, X, Q, x):
 		post_all.append(post_candidates)
 	return post_decode, post_all
 
-def viterbi( params, X, Q, x):
+def viterbi(params, X, Q, x):
 	marg = params[0]
 	trans = params[1]
 	emit = params[2]
@@ -394,12 +394,10 @@ def main():
 	x = emissions
 	old_params = parameters
 	old_log_lk = llf
-
 	post_mean, post_decode = posterior_mean(old_params, X, Q, x)
 	v = viterbi(old_params, X, Q, x)
-	for i in xrange(len(post_decode)):
-		#decodings_initial_output_file.write( str(v[i]) + "\t" + str(post_decode[i]) + "\t" + str(post_mean[i]) + "\n")
-		print(str(v[i]) + "\t" + str(post_decode[i]) + "\t" + str(post_mean[i])) 
+
+	new_params = 0 
 	for i in range(15):
 		print ("ITERATION NUMBER: " + str(i+1))
 		print "============================"
@@ -440,28 +438,36 @@ def main():
 
 	parameter_output_filename = "outputs/estimated_parameters" + sequence_type
 	parameter_output_file = open(parameter_output_filename, 'w')
-	parameter_output_file.write("pi_k_ml\n")
-	parameter_output_file.write(str(new_params[0]))
-	parameter_output_file.write("a_ij_ml\n")
-	parameter_output_file.write(str(new_params[1]))
-	parameter_output_file.write("e_k_ml\n")
-	parameter_output_file.write(str(new_params[2]))
+	parameter_output_file.write("# Marginal probabilities\n")
+	for k in Q:
+		parameter_output_file.write(str(new_params[0][k]) + "\n")
+	parameter_output_file.write("\n")
+	parameter_output_file.write("# Transition Probabilities\n")
+	for i in Q:
+		for j in Q:
+			parameter_output_file.write(str(new_params[1][i][j]) + " ")
+		parameter_output_file.write("\n")
+			
+	parameter_output_file.write("\n")
+	parameter_output_file.write("# Emission Probabilities\n")
+	for k in Q: 
+		for x in X:
+			parameter_output_file.write(str(new_params[2][k][X.index(x)]) + " ")
+		parameter_output_file.write("\n")
 
+	#-------------Likelihoods (log)--------------------
 	likelihood_output_filename = "outputs/likelihoods" + sequence_type
 	likelihood_output_file = open(likelihood_output_filename, 'w')
-	likelihood_output_file.write("Log-Likelihood with Initial Parameters\n")
+	likelihood_output_file.write("#Likelihood under {initial, estimated} parameters\n")
 	likelihood_output_file.write(str(llf) + '\n')
-	likelihood_output_file.write("Log-Likelihood with Estimated Parameters\n")
 	likelihood_output_file.write(str(new_log_lk) + '\n')
 
 	#-----------Decodings initial------------------
 	decodings_initial_output_filename = "outputs/decodings_initial" + sequence_type
 	decodings_initial_output_file = open(decodings_initial_output_filename, 'w')
-	decodings_initial_output_file.write("Viterbi Decoding | Posterior Decoding | Posterior Mean\n")
+	decodings_initial_output_file.write("# Viterbi_decoding posterior_decoding posterior_mean\n")
 		
 	#CALCULATE THIS SHIT"
-	post_mean, post_decode = posterior_mean(old_params, X, Q, x)
-	v = viterbi(old_params, X, Q, x)
 	for i in xrange(len(post_decode)):
 		decodings_initial_output_file.write( str(v[i]) + "\t" + str(post_decode[i]) + "\t" + str(post_mean[i]) + "\n")
 
@@ -472,8 +478,14 @@ def main():
 	#-----------Decodings estimated----------------
 	decodings_estimated_output_filename = "outputs/decodings_estimated" + sequence_type
 	decodings_estimated_output_file = open(decodings_estimated_output_filename, 'w')
-	decodings_estimated_output_file.write("Viterbi Decoding | Posterior Decoding | Posterior Mean\n")
+	decodings_estimated_output_file.write("# Viterbi_decoding posterior_decoding posterior_mean\n")
 	#CALCULATE THIS SHIT"
+
+	post_mean, post_decode = posterior_mean(new_params, X, Q, x)
+	v = viterbi(new_params, X, Q, x)
+	for i in xrange(len(post_decode)):
+		decodings_estimated_output_file.write( str(v[i]) + "\t" + str(post_decode[i]) + "\t" + str(post_mean[i]) + "\n")
+
 
 	plot_estimated_output_filename = "outputs/plot_estimated" + sequence_type_pdf
 	plot_estimated_output_file = open(plot_estimated_output_filename, 'w')
