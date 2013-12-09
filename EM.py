@@ -56,7 +56,7 @@ def readParams():
 	observation_space = ['I','D']
 	hidden_space = [1, 2, 3, 4]
 
-	return parameters, observation_space , hidden_space, emissions 
+	return parameters, observation_space, hidden_space, emissions 
 
 
 #forward decoding
@@ -223,8 +223,9 @@ def m_step(params, X, x, Q):
 		p_max = max(p_sum)
 		for j in xrange(1, 1+length):
 			p_sum[j-1] = math.exp(p_sum[j-1] - p_max)
-		print p_sum
+		print "p_sum: " + str(p_sum)
 		pi_k_ml[k] = Pi_k[k] - (p_max + math.log(sum(p_sum)))
+	print ""
 		
 		
 	for x in xrange(1,1+length):
@@ -282,22 +283,68 @@ def main():
 	old_log_lk = llf
 
 	for i in range(15):
-		new_params, post_params, new_log_lk = EM(X, x, Q, old_params, old_log_lk)
-		old_params = new_params
-		old_log_lk = new_log_lk
-
-		print ("ITERATION NUMBER: " + str(i))
+		print ("ITERATION NUMBER: " + str(i+1))
 		print "============================"
 		print ""
+		new_params, post_params, new_log_lk = EM(X, x, Q, old_params, old_log_lk)
+		old_params = new_params
+		if (abs(old_log_lk - new_log_lk) < 1):
+			print "CONVERGED!"
+			print ""
+			count = 1
+		old_log_lk = new_log_lk
+
+
 		print "Parameters"
 		print "----------"
-		print "pi_k_ml..........a_ij_ml..........e_k_ml"
-		print (str(new_params[0]) + ".........." + str(new_params[1]) + ".........." + str(new_params[2]))
-		print "============================"
+		print "pi_k_ml: " + str(new_params[0])
+		print ""
+		print "a_ij_ml: " + str(new_params[1])
+		print ""
+		print "e_k_ml: "  + str(new_params[2])
+		print ""
 		print ""
 		print "Log-Likelihood with Estimated Parameters"
 		print "---------------------------------------"
 		print str(new_log_lk)
+		print ""
+		print ""
+
+		"""
+		parameterFileString = sys.argv[1]
+		sequence_type = parameterFileString[-7:]
+		sequence_type_pdf = parameterFileString[-7:-4] + ".pdf"
+
+		parameter_output_filename = "outputs/estimated_parameters" + sequence_type
+		parameter_output_file = open(parameter_output_filename, 'w')
+		parameter_output_file.write("pi_k_ml..........a_ij_ml..........e_k_ml\n")
+		parameter_output_file.write(str(new_params[0]) + ".........." + str(new_params[1]) + ".........." + str(new_params[2]))
+
+		likelihood_output_filename = "outputs/likelihood" + sequence_type
+		likelihood_output_file = open(likelihood_output_filename, 'w')
+		likelihood_output_file.write("Log-Likelihood with Initial Parameters\n")
+		likelihood_output_file.write(str(llf) + '\n'))
+		likelihood_output_file.write("Log-Likelihood with Estimated Parameters\n")
+		likelihood_output_file.write(str(new_log_lk) + '\n'))
+
+		decodings_initial_output_filename = "outputs/decodings_initial" + sequence_type
+		decodings_initial_output_file = open(decodings_initial_output_filename, 'w')
+		decodings_initial_output_file.write("Viterbi Decoding | Posterior Decoding | Posterior Mean\n")
+		#CALCULATE THIS SHIT"
+
+		plot_initial_output_filename = "outputs/plot_initial" + sequence_type_pdf
+		plot_initial_output_file = open(plot_initial_output_filename, 'w')
+		#PLOT THIS SHIT"
+
+		decodings_estimated_output_filename = "outputs/decodings_estimated" + sequence_type
+		decodings_estimated_output_file = open(decodings_estimated_output_filename, 'w')
+		decodings_estimated_output_file.write("Viterbi Decoding | Posterior Decoding | Posterior Mean\n")
+		#CALCULATE THIS SHIT"
+
+		plot_estimated_output_filename = "outputs/plot_estimated" + sequence_type_pdf
+		plot_estimated_output_file = open(plot_estimated_output_filename, 'w')
+		#PLOT THIS SHIT"
+		"""
 
 if __name__ == '__main__':
 	main()
