@@ -318,7 +318,7 @@ def posterior_decoding (params, X, Q, x):
 	for t in xrange(len(x)):
 		post_candidates = []
 		for k in Q:
-			post_candidates.append( math.exp(logf[t][k] + logb[t][k] - llf))
+			post_candidates.append(math.exp(logf[t][k] + logb[t][k] - llf))
 		post_decode.append(S[post_candidates.index(max(post_candidates))])
 		post_all.append(post_candidates)
 	return post_decode, post_all
@@ -328,25 +328,30 @@ def viterbi( params, X, Q, x):
 	trans = params[1]
 	emit = params[2]
 	v = []
-	S = [.32, 1.75, 4.54, 9.40]
-	v.append ([])
+	S = {1:.32, 2:1.75, 3:4.54, 4:9.40}
+	v.append ({})
 	viterbi = []
 	for k in Q:
-		v[0].append(emit[k][X.index(x[0])] * marg[k])
+		v[0][k] = math.log(emit[k][X.index(x[0])]) + math.log( marg[k])
 	for i in xrange(len(x)):
 		viterbi.append(0)
+
 	v_max = []
-	ptr = [[]]
+	ptr = [{}]
 	for t in xrange(1, len(x)):
-		v.append([])
-		ptr.append([])
+		v.append({})
+		ptr.append({})
 		for j in Q:
-			v_max = [v[t-1][i-1] * trans[i][j] for i in Q] 
-			v[t].append(emit[j][X.index(x[t])] * max(v_max))
-			ptr[t].append(S[v_max.index(max(v_max))]) 
-	viterbi[len(x) -1] = S[v[len(x)-1].index(max(v[len(x)-1]))]
+			v_max = [v[t-1][i] + math.log(trans[i][j]) for i in Q] 
+			v[t][j] = math.log(emit[j][X.index(x[t])])  + max(v_max)
+			ptr[t][j] = v_max.index(max(v_max)) + 1
+	m = max(v[len(x)-1], key = v[len(x)-1].get)
+	viterbi[len(x) -1] = m
 	for t in xrange(len(x) - 2, -1, -1):
-		viterbi[t] = ptr[t + 1][S.index(viterbi[t+1])]
+		viterbi[t] = ptr[t + 1][viterbi[t+1]]
+	for t in xrange(len(x)-1):
+		viterbi[t] = S[viterbi[t]]
+	viterbi[len(x)-1] = S[m]
 	return viterbi
 
 def posterior_mean (params, X, Q, x):
@@ -390,6 +395,11 @@ def main():
 	old_params = parameters
 	old_log_lk = llf
 
+	post_mean, post_decode = posterior_mean(old_params, X, Q, x)
+	v = viterbi(old_params, X, Q, x)
+	for i in xrange(len(post_decode)):
+		#decodings_initial_output_file.write( str(v[i]) + "\t" + str(post_decode[i]) + "\t" + str(post_mean[i]) + "\n")
+		print(str(v[i]) + "\t" + str(post_decode[i]) + "\t" + str(post_mean[i])) 
 	for i in range(15):
 		print ("ITERATION NUMBER: " + str(i+1))
 		print "============================"
@@ -426,6 +436,8 @@ def main():
 	sequence_type = parameterFileString[-7:]
 	sequence_type_pdf = parameterFileString[-7:-4] + ".pdf"
 
+	#-------------Parameters-----------------------
+
 	parameter_output_filename = "outputs/estimated_parameters" + sequence_type
 	parameter_output_file = open(parameter_output_filename, 'w')
 	parameter_output_file.write("pi_k_ml\n")
@@ -442,6 +454,7 @@ def main():
 	likelihood_output_file.write("Log-Likelihood with Estimated Parameters\n")
 	likelihood_output_file.write(str(new_log_lk) + '\n')
 
+	#-----------Decodings initial------------------
 	decodings_initial_output_filename = "outputs/decodings_initial" + sequence_type
 	decodings_initial_output_file = open(decodings_initial_output_filename, 'w')
 	decodings_initial_output_file.write("Viterbi Decoding | Posterior Decoding | Posterior Mean\n")
@@ -450,12 +463,13 @@ def main():
 	post_mean, post_decode = posterior_mean(old_params, X, Q, x)
 	v = viterbi(old_params, X, Q, x)
 	for i in xrange(len(post_decode)):
-		decodings_estimated_output_file.write( str(v[i]) + "\t" + str(post_decode[i]) + "\t" + str(post_mean[i]) + "\n")
+		decodings_initial_output_file.write( str(v[i]) + "\t" + str(post_decode[i]) + "\t" + str(post_mean[i]) + "\n")
 
 	plot_initial_output_filename = "outputs/plot_initial" + sequence_type_pdf
 	plot_initial_output_file = open(plot_initial_output_filename, 'w')
 	#PLOT THIS SHIT"
 
+	#-----------Decodings estimated----------------
 	decodings_estimated_output_filename = "outputs/decodings_estimated" + sequence_type
 	decodings_estimated_output_file = open(decodings_estimated_output_filename, 'w')
 	decodings_estimated_output_file.write("Viterbi Decoding | Posterior Decoding | Posterior Mean\n")
