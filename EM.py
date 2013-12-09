@@ -208,7 +208,10 @@ def m_step(params, X, x, Q):
 		pi_k_ml[k] = Pi_k[k] - math.log(sum([Pi_k[j] for j in range(1, 1 + length)]))
 		e_k_ml[k][0] = E_k[k][0] - math.log (sum([E_k[k][sig] for sig in range(2)]))
 		e_k_ml[k][1] = E_k[k][1] - math.log(sum([E_k[k][sig] for sig in range(2)]))
-	a_ij_ml[i][j] = A_ij[i][j] - math.log(sum([A_ij[i][r] for r in range(1, 1 + length)]))
+
+	for i in range(1, 1 + length):
+		for j in range(1, 1 + length):
+			a_ij_ml[i][j] = A_ij[i][j] - math.log(sum([A_ij[i][r] for r in range(1, 1 + length)]))
 
 	max_likelihood_params = (pi_k_ml, a_ij_ml, e_k_ml)
 	return max_likelihood_params
