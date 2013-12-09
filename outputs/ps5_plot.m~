@@ -1,0 +1,60 @@
+function [outFile] = ps5_plot(one, two, four, five)
+
+v1 = xlsread(one, 'A1:A100000');
+pd1 =  xlsread(one, 'B1:B100000');
+pm1 = xlsread(one,  'C1:C100000');
+true =  xlsread(four, 'D1:D100000');
+
+
+v2 = xlsread(two, 'A1:A100000');
+pd2 =  xlsread(two, 'B1:B100000');
+pm2 = xlsread(two,  'C1:C100000');
+
+v4 = xlsread(four, 'A1:A100000');
+pd4 =  xlsread(four, 'B1:B100000');
+pm4 = xlsread(four,  'C1:C100000');
+
+v5 = xlsread(five, 'A1:A100000');
+pd5 =  xlsread(five, 'B1:B100000');
+pm5 = xlsread(five,  'C1:C100000');
+
+t = linspace(1,100000, 100000)';
+
+% figure;
+% hold on
+% legend(viter
+% title('Initial Decodings, 1mu')
+% plot(t,v1,'g-')
+% plot(t,pd1,'b-')
+% plot(t,pm1, 'r-')
+% plot(t,true,'k-')
+% hold off
+
+% figure;
+% hold on
+% title('Initial Decodings, 2mu')
+% plot(t,v2,'g-')
+% plot(t,pd2,'b-')
+% plot(t,pm2, 'r-')
+% plot(t,true,'k-')
+% hold off
+
+figure;
+hold on
+title('Initial Decodings, 4mu')
+plot(t,v4,'g-')
+plot(t,pd4,'b-')
+plot(t,pm4, 'r-')
+plot(t,true,'k-')
+hold off
+
+% figure;
+% hold on
+% title('Initial Decodings, 5mu')
+% plot(t,v5,'g-')
+% plot(t,pd5,'b-')
+% plot(t,pm5, 'r-')
+% plot(t,true,'k-')
+% hold off
+
+end
