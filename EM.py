@@ -50,7 +50,7 @@ def readParams():
 	for line in emit:
 		if line[2].isdigit():
 			temp = line.split()
-			emitProb[int(temp[0])] = (float(temp[1]), float(temp[2]))	
+			emitProb[int(temp[0])] = [float(temp[1]), float(temp[2])]	
 
 	parameters = [margProb, transProb, emitProb]
 	observation_space = ['I','D']
@@ -141,10 +141,22 @@ def EM(X, x, Q, old_params, old_log_lk):
 	post_params = e_step(old_params, X, x, Q)
 	new_params = m_step(post_params, X, x, Q)
 	new_log_lk = compute_likelihood(new_params, post_params, old_log_lk)
+
 	return new_params, post_params, new_log_lk
 
 def e_step(params, X, x, Q):
 
+	marg, trans, emit = params
+	
+	for k in Q:
+		marg[k] = math.exp(marg[k])
+	for i in Q:
+		for j in Q:
+			trans[i][j] = math.exp(trans[i][j])
+	for k in Q:
+		for i in xrange(2):
+			emit[k][i] = math.exp(emit[k][i])
+	params = [marg, trans, emit]
 	f_log, f_log_lk = forward(params, X, Q, x)
 	b_log, b_log_lk = backward(params, X, Q, x)
 	a = params[1]
@@ -165,8 +177,6 @@ def e_step(params, X, x, Q):
 			for j in range(1, 1 + length):
 				# A_ij[i][j] = f[t][i] * b[t+1][j] * a[i][j] * e[j][t+1] / likelihood
 				A_ij[i][j] = f_log[t][i] + b_log[t+1][j] + a[i][j] + e[j][X.index(x[t+1])] - f_log_lk
-
-
 	"""emission"""
 	E_k = {}
 	for j in range(1, 1 + length):
@@ -180,7 +190,6 @@ def e_step(params, X, x, Q):
 			elif x[t] == 'D':
 				# E_k[k][1] = f[t][k] * b[t][k] / f_log_lk
 				E_k[k][1] = f_log[t][k] + b_log[t][k] - f_log_lk
-
 
 	posterior_params = (Pi_k, A_ij, E_k)
 	return posterior_params
@@ -198,18 +207,51 @@ def m_step(params, X, x, Q):
 
 	Pi_k, A_ij, E_k = params[0], params[1], params[2]
 
-
 	"""
 	HERE
 	"""
+	p_sum = []
+	e_sum = []
+	a_sum = [] 
+	p_max = 0
+	e_max = 0
+	a_max = 0
 	for k in range(1, 1 + length):
-		print Pi_k[k]
-		print sum([Pi_k[j] for j in range(1, 1 + length)])
-		pi_k_ml[k] = Pi_k[k] - math.log(sum([Pi_k[j] for j in range(1, 1 + length)]))
-		e_k_ml[k][0] = E_k[k][0] - math.log (sum([E_k[k][sig] for sig in range(2)]))
+		p_sum = []
+		for j in xrange(1,1+length):
+			p_sum.append(Pi_k[j])
+		p_max = max(p_sum)
+		for j in xrange(1, 1+length):
+			p_sum[j-1] = math.exp(p_sum[j-1] - p_max)
+		print p_sum
+		pi_k_ml[k] = Pi_k[k] - (p_max + math.log(sum(p_sum)))
+		
+		
+	for x in xrange(1,1+length):
+		a_sum = []
+		for y in xrange(1,1+length):
+			a_sum.append(A_ij[x][y])
+		a_max = max(a_sum)
+		for y in xrange(1, 1+length):
+			a_sum[y-1] = math.exp(a_sum[y-1] - a_max)
+		for y in xrange(1, 1+length):
+			a_ij_ml[x][y] = A_ij[x][y] - (a_max + sum(a_sum))	
+			
+	for x in xrange(1, 1 + length):
+		e_sum = []
+		for y in xrange(2):
+			e_sum.append(E_k[x][y])
+		e_max = max(e_sum)
+		for y in xrange(2):
+			e_sum[y-1] = math.exp(e_sum[y-1] - e_max)
+		for y in xrange(2):
+			e_k_ml[x][y] = E_k[x][y] - (e_max + sum(e_sum))	
+		
+		"""e_k_ml[k][0] = E_k[k][0] - math.log (sum([E_k[k][sig] for sig in range(2)]))
 		e_k_ml[k][1] = E_k[k][1] - math.log(sum([E_k[k][sig] for sig in range(2)]))
-	a_ij_ml[i][j] = A_ij[i][j] - math.log(sum([A_ij[i][r] for r in range(1, 1 + length)]))
+		a_ij_ml[i][j] = A_ij[i][j] - math.log(sum([A_ij[i][r] for r in range(1, 1 + length)]))"""
 
+		
 	max_likelihood_params = (pi_k_ml, a_ij_ml, e_k_ml)
 	return max_likelihood_params
 
@@ -218,8 +260,8 @@ def compute_likelihood(ml_params, post_params, old_log_lk):
 	Pi_k, A_ij, E_k = post_params[0], post_params[1], post_params[2]
 	pi_k_ml, a_ij_ml, e_k_ml = ml_params[0], ml_params[1], ml_params[2]
 	new_log_lk = 0.0
-	for i in range(length):
-		for j in range(length):
+	for i in xrange(1, 1 + length):
+		for j in xrange(1, 1 + length):
 			new_log_lk += math.exp(A_ij[i][j]) * a_ij_ml[i][j] #Transition probabilities
 		new_log_lk += math.exp(E_k[i][0]) * e_k_ml[i][0] #Emission probabilities
 		new_log_lk += math.exp(E_k[i][1]) * e_k_ml[i][1] #Emission probabilities
