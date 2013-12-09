@@ -153,14 +153,14 @@ def EM(X, x, Q, old_params, old_log_lk):
 def e_step(params, X, x, Q):
 
 	marg, trans, emit = params
-	for k in Q:
-		marg[k] = math.exp(marg[k])
-	for i in Q:
-		for j in Q:
-			trans[i][j] = math.exp(trans[i][j])
-	for k in Q:
-		for i in xrange(2):
-			emit[k][i] = math.exp(emit[k][i])
+	# for k in Q:
+	# 	marg[k] = math.exp(marg[k])
+	# for i in Q:
+	# 	for j in Q:
+	# 		trans[i][j] = math.exp(trans[i][j])
+	# for k in Q:
+	# 	for i in xrange(2):
+	# 		emit[k][i] = math.exp(emit[k][i])
 	params = [marg, trans, emit]
 	f_log, f_log_lk = forward(params, X, Q, x)
 	b_log, b_log_lk = backward(params, X, Q, x)
@@ -172,44 +172,65 @@ def e_step(params, X, x, Q):
 
 	"""stationary"""
 	Pi_k = {}
+	exp_Pi_k = {}
 	for k in range(1, 1 + length):
 		# Pi_k[k] = f[0][k] * b[0][k] / likelihood
 		Pi_k[k] = f_log[0][k] + b_log[0][k] - f_log_lk
+		exp_Pi_k[k] = math.exp(Pi_k[k])
+		# print f_log_lk
+		# print Pi_k[k]
+	"""
+	CHECKED STATIONARY VS BRIAN
+	"""
 
 	"""transition"""
-	print "A_ij"
-	print "================================="
 	A_ij = {}
 	for j in range(1, 1 + length):
 		A_ij[j] = {}
-	# for t in range(L-1):
-	# 	for i in range(1, 1 + length):
-	# 		for j in range(1, 1 + length):
-	# 			# A_ij[i][j] = f[t][i] * b[t+1][j] * a[i][j] * e[j][t+1] / likelihood
-	# 			A_ij[i][j] = f_log[t][i] + b_log[t+1][j] + a[i][j] + e[j][X.index(x[t+1])] - f_log_lk
-	# 			print A_ij
-
 	for i in range(1, 1 + length):
 		for j in range(1, 1 + length):
-			# A_ij[i][j] = f[t][i] * b[t+1][j] * a[i][j] * e[j][t+1] / likelihood
-			A_ij[i][j] = sum(f_log[t][i] + b_log[t+1][j] + a[i][j] + e[j][X.index(x[t+1])] - f_log_lk for t in range(1, L-1))
-			print A_ij
+			A_ij_sum = []
+			for t in range(L-1):
+				# A_ij[i][j] = f[t][i] * b[t+1][j] * a[i][j] * e[j][t+1] / likelihood
+				A_ij[i][j] = f_log[t][i] + b_log[t+1][j] + math.log(a[i][j]) + math.log(e[j][X.index(x[t+1])])
+				A_ij_sum.append(A_ij[i][j])
+			max_transition = max(A_ij_sum)
+			trans_sum = 0.0
+			for r in range(len(A_ij_sum)):
+				trans_sum += math.exp(A_ij_sum[r] - max_transition)
+			log_trans_sum = math.log(trans_sum) + max_transition
+			log_diff_transition = log_trans_sum - f_log_lk
+			A_ij[i][j] = math.exp(log_diff_transition)
+
 	"""emission"""
 	E_k = {}
+	observed = ['I', 'D']
 	for j in range(1, 1 + length):
 		E_k[j] = [0.0, 0.0]
 	for k in range(1, 1 + length):
-		for t in range(L-1):
-			if x[t] == 'I':
+		for obs in observed:
+			E_k_sum = []
+			for t in range(L):
+				if obs == 'I' and x[t] == 'I':
 				# E_k[k][0] = f[t][k] * b[t][k] / f_log_lk
-				# E_k[k][0] = f_log[t][k] + b_log[t][k] - f_log_lk
-				E_k[k][0] += f_log[t][k] + b_log[t][k] - f_log_lk
-
-			elif x[t] == 'D':
-				# E_k[k][1] = f[t][k] * b[t][k] / f_log_lk
-				# E_k[k][1] = f_log[t][k] + b_log[t][k] - f_log_lk
-				E_k[k][1] += f_log[t][k] + b_log[t][k] - f_log_lk
-
+					E_k[k][0] = f_log[t][k] + b_log[t][k]
+					E_k_sum.append(E_k[k][0])
+				# E_k[k][0] += f_log[t][k] + b_log[t][k] - f_log_lk
+				elif obs == 'D' and x[t] == 'D':
+					# E_k[k][1] = f[t][k] * b[t][k] / f_log_lk
+					E_k[k][1] = f_log[t][k] + b_log[t][k]
+					E_k_sum.append(E_k[k][1])
+					# E_k[k][1] += f_log[t][k] + b_log[t][k] - f_log_lk
+			max_emission = max(E_k_sum)
+			emis_sum = 0.0
+			for r in range(len(E_k_sum)):
+				emis_sum  += math.exp(E_k_sum[r] - max_emission)
+			log_emis_sum  = math.log(emis_sum) + max_emission
+			log_diff_emission = log_emis_sum - f_log_lk
+			if obs == 'I':
+				E_k[k][0] = math.exp(log_diff_emission)
+			elif obs == 'D':
+				E_k[k][1] = math.exp(log_diff_emission)
 	posterior_params = (Pi_k, A_ij, E_k)
 	return posterior_params
 
@@ -226,51 +247,50 @@ def m_step(params, X, x, Q):
 
 	Pi_k, A_ij, E_k = params[0], params[1], params[2]
 
-	"""
-	HERE
-	"""
-	p_sum = []
-	e_sum = []
-	a_sum = [] 
-	p_max = 0
-	e_max = 0
-	a_max = 0
-	for k in range(1, 1 + length):
-		p_sum = []
-		for j in xrange(1,1+length):
-			p_sum.append(Pi_k[j])
-		p_max = max(p_sum)
-		for j in xrange(1, 1+length):
-			p_sum[j-1] = math.exp(p_sum[j-1] - p_max)
-		# print "p_sum: " + str(p_sum)
-		pi_k_ml[k] = Pi_k[k] - (p_max + math.log(sum(p_sum)))
-	print ""
-		
-		
-	for x in xrange(1,1+length):
-		a_sum = []
-		for y in xrange(1,1+length):
-			a_sum.append(A_ij[x][y])
-		a_max = max(a_sum)
-		for y in xrange(1, 1+length):
-			a_sum[y-1] = math.exp(a_sum[y-1] - a_max)
-		for y in xrange(1, 1+length):
-			a_ij_ml[x][y] = A_ij[x][y] - (a_max + sum(a_sum))	
-			
-	for x in xrange(1, 1 + length):
-		e_sum = []
-		for y in xrange(2):
-			e_sum.append(E_k[x][y])
-		e_max = max(e_sum)
-		for y in xrange(2):
-			e_sum[y-1] = math.exp(e_sum[y-1] - e_max)
-		for y in xrange(2):
-			e_k_ml[x][y] = E_k[x][y] - (e_max + sum(e_sum))	
-		
-		"""e_k_ml[k][0] = E_k[k][0] - math.log (sum([E_k[k][sig] for sig in range(2)]))
-		e_k_ml[k][1] = E_k[k][1] - math.log(sum([E_k[k][sig] for sig in range(2)]))
-		a_ij_ml[i][j] = A_ij[i][j] - math.log(sum([A_ij[i][r] for r in range(1, 1 + length)]))"""
+	for i in range(1, 1+length):
+		for j in range(1, 1+length):
+			a_ij_ml[i][j] = A_ij[i][j] / sum([A_ij[i][r] for r in range(1, 1 + length)])
+	for k in range(1, 1+length):
+		e_k_ml[k][0] = E_k[k][0] / sum([E_k[k][sig] for sig in range(2)])
+		e_k_ml[k][1] = E_k[k][1] / sum([E_k[k][sig] for sig in range(2)])
 
+	# p_sum = []
+	# e_sum = []
+	# a_sum = [] 
+	# p_max = 0
+	# e_max = 0
+	# a_max = 0
+	# for k in range(1, 1 + length):
+	# 	p_sum = []
+	# 	for j in xrange(1,1+length):
+	# 		p_sum.append(Pi_k[j])
+	# 	p_max = max(p_sum)
+	# 	for j in xrange(1, 1+length):
+	# 		p_sum[j-1] = math.exp(p_sum[j-1] - p_max)
+	# 	# print "p_sum: " + str(p_sum)
+	# 	pi_k_ml[k] = Pi_k[k] - (p_max + math.log(sum(p_sum)))
+	# print ""
+		
+		
+	# for x in xrange(1,1+length):
+	# 	a_sum = []
+	# 	for y in xrange(1,1+length):
+	# 		a_sum.append(A_ij[x][y])
+	# 	a_max = max(a_sum)
+	# 	for y in xrange(1, 1+length):
+	# 		a_sum[y-1] = math.exp(a_sum[y-1] - a_max)
+	# 	for y in xrange(1, 1+length):
+	# 		a_ij_ml[x][y] = A_ij[x][y] - (a_max + sum(a_sum))	
+			
+	# for x in xrange(1, 1 + length):
+	# 	e_sum = []
+	# 	for y in xrange(2):
+	# 		e_sum.append(E_k[x][y])
+	# 	e_max = max(e_sum)
+	# 	for y in xrange(2):
+	# 		e_sum[y-1] = math.exp(e_sum[y-1] - e_max)
+	# 	for y in xrange(2):
+	# 		e_k_ml[x][y] = E_k[x][y] - (e_max + sum(e_sum))
 		
 	max_likelihood_params = (pi_k_ml, a_ij_ml, e_k_ml)
 	return max_likelihood_params
