@@ -143,11 +143,27 @@ def EM(X, x, Q, old_params, old_log_lk):
 	# print post_params[1]
 	# print post_params[2]	
 	new_params = m_step(post_params, X, x, Q)
-	# print new_params[0]
-	# print new_params[1]
-	# print new_params[2]	
-	new_log_lk = compute_likelihood(new_params, post_params, old_log_lk)
 
+	marg = new_params[0]
+	trans = new_params[1]
+	emit = new_params[2]
+
+
+	# for k in Q:
+	# 	marg[k] = math.exp(marg[k])
+	# for i in Q:
+	# 	for j in Q:
+	# 		trans[i][j] = math.exp(trans[i][j])
+	# for k in Q:
+	# 	for i in xrange(2):
+	# 		emit[k][i] = math.exp(emit[k][i])
+	params = [marg, trans, emit]
+
+	# print marg
+	# print trans
+	# print emit
+
+	new_f_log, new_log_lk = forward(params, X, Q, x)
 	return new_params, post_params, new_log_lk
 
 def e_step(params, X, x, Q):
@@ -176,12 +192,9 @@ def e_step(params, X, x, Q):
 	for k in range(1, 1 + length):
 		# Pi_k[k] = f[0][k] * b[0][k] / likelihood
 		Pi_k[k] = f_log[0][k] + b_log[0][k] - f_log_lk
-		exp_Pi_k[k] = math.exp(Pi_k[k])
+		Pi_k[k] = math.exp(Pi_k[k])
 		# print f_log_lk
 		# print Pi_k[k]
-	"""
-	CHECKED STATIONARY VS BRIAN
-	"""
 
 	"""transition"""
 	A_ij = {}
@@ -247,6 +260,7 @@ def m_step(params, X, x, Q):
 
 	Pi_k, A_ij, E_k = params[0], params[1], params[2]
 
+	pi_k_ml = Pi_k
 	for i in range(1, 1+length):
 		for j in range(1, 1+length):
 			a_ij_ml[i][j] = A_ij[i][j] / sum([A_ij[i][r] for r in range(1, 1 + length)])
@@ -295,19 +309,27 @@ def m_step(params, X, x, Q):
 	max_likelihood_params = (pi_k_ml, a_ij_ml, e_k_ml)
 	return max_likelihood_params
 
-def compute_likelihood(ml_params, post_params, old_log_lk):
+# def compute_likelihood(ml_params, post_params, old_log_lk):
 	
-	Pi_k, A_ij, E_k = post_params[0], post_params[1], post_params[2]
-	pi_k_ml, a_ij_ml, e_k_ml = ml_params[0], ml_params[1], ml_params[2]
-	new_log_lk = 0.0
-	for i in xrange(1, 1 + length):
-		for j in xrange(1, 1 + length):
-			new_log_lk += math.exp(A_ij[i][j]) * a_ij_ml[i][j] #Transition probabilities
-		new_log_lk += math.exp(E_k[i][0]) * e_k_ml[i][0] #Emission probabilities
-		new_log_lk += math.exp(E_k[i][1]) * e_k_ml[i][1] #Emission probabilities
-		new_log_lk += math.exp(Pi_k[i]) * pi_k_ml[i] #Stationary probabilities
-	old_log_lk = new_log_lk
-	return new_log_lk
+# 	Pi_k, A_ij, E_k = post_params[0], post_params[1], post_params[2]
+# 	pi_k_ml, a_ij_ml, e_k_ml = ml_params[0], ml_params[1], ml_params[2]
+# 	new_log_lk = 0.0
+# 	# for i in xrange(1, 1 + length):
+# 	# 	for j in xrange(1, 1 + length):
+# 	# 	# 	new_log_lk += math.exp(A_ij[i][j]) * a_ij_ml[i][j] #Transition probabilities
+# 	# 	# new_log_lk += math.exp(E_k[i][0]) * e_k_ml[i][0] #Emission probabilities
+# 	# 	# new_log_lk += math.exp(E_k[i][1]) * e_k_ml[i][1] #Emission probabilities
+# 	# 	# new_log_lk += math.exp(Pi_k[i]) * pi_k_ml[i] #Stationary probabilities
+
+# 	# 		new_log_lk += A_ij[i][j] * math.log(a_ij_ml[i][j]) #Transition probabilities
+# 	# 	new_log_lk += E_k[i][0] * math.log(e_k_ml[i][0]) #Emission probabilities
+# 	# 	new_log_lk += E_k[i][1] * math.log(e_k_ml[i][1]) #Emission probabilities
+# 	# 	new_log_lk += Pi_k[i] * math.log(pi_k_ml[i]) #Stationary probabilities
+
+# 	f_log, new_log_llk = forward(params, X, Q, x
+
+# 	old_log_lk = new_log_lk
+# 	return new_log_lk
 
 
 def main():
@@ -353,7 +375,6 @@ def main():
 	print "---------------------------------------"
 	print str(llf)
 
-	"""
 	parameterFileString = sys.argv[1]
 	sequence_type = parameterFileString[-7:]
 	sequence_type_pdf = parameterFileString[-7:-4] + ".pdf"
@@ -366,9 +387,9 @@ def main():
 	likelihood_output_filename = "outputs/likelihood" + sequence_type
 	likelihood_output_file = open(likelihood_output_filename, 'w')
 	likelihood_output_file.write("Log-Likelihood with Initial Parameters\n")
-	likelihood_output_file.write(str(llf) + '\n'))
+	likelihood_output_file.write(str(llf) + '\n')
 	likelihood_output_file.write("Log-Likelihood with Estimated Parameters\n")
-	likelihood_output_file.write(str(new_log_lk) + '\n'))
+	likelihood_output_file.write(str(new_log_lk) + '\n')
 
 	decodings_initial_output_filename = "outputs/decodings_initial" + sequence_type
 	decodings_initial_output_file = open(decodings_initial_output_filename, 'w')
@@ -387,7 +408,6 @@ def main():
 	plot_estimated_output_filename = "outputs/plot_estimated" + sequence_type_pdf
 	plot_estimated_output_file = open(plot_estimated_output_filename, 'w')
 	#PLOT THIS SHIT"
-	"""
 
 if __name__ == '__main__':
 	main()
