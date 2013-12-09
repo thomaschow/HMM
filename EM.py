@@ -174,7 +174,7 @@ def e_step(params, X, x, Q):
 		A_ij[j] = {}
 	for t in range(L-1):
 		for i in range(1, 1 + length):
-			for j in range(1, 1 + length):
+			for j in range(1, 1 + length):	
 				# A_ij[i][j] = f[t][i] * b[t+1][j] * a[i][j] * e[j][t+1] / likelihood
 				A_ij[i][j] = f_log[t][i] + b_log[t+1][j] + a[i][j] + e[j][X.index(x[t+1])] - f_log_lk
 	"""emission"""
