@@ -47,6 +47,7 @@ xlabel('locus')
 ylabel('TMRCA')
 plot(t,v1,'g-', t,pd1,'b-', t,pm1, 'r-', t,true,'k-')
 legend('Viterbi', 'decoding','mean','truth')
+legend('Location', 'North')
 hold off
 
 figure;
@@ -56,6 +57,7 @@ xlabel('locus')
 ylabel('TMRCA')
 plot(t,v2,'g-',t,pd2,'b-', t,pm2, 'r-', t,true,'k-')
 legend('Viterbi', 'decoding','mean','truth')
+legend('Location', 'North')
 hold off
 
 figure;
@@ -65,6 +67,7 @@ xlabel('locus')
 ylabel('TMRCA')
 plot(t,v4,'g-', t,pd4,'b-', t,pm4, 'r-', t,true,'k-')
 legend('Viterbi', 'decoding','mean','truth')
+legend('Location', 'North')
 hold off
 
 figure;
@@ -74,6 +77,7 @@ xlabel('locus')
 ylabel('TMRCA')
 plot(t,v5,'g-', t,pd5,'b-', t,pm5, 'r-', t,true,'k-')
 legend('Viterbi', 'decoding','mean','truth')
+legend('Location', 'North')
 hold off
 
 figure;
@@ -83,6 +87,7 @@ xlabel('locus')
 ylabel('TMRCA')
 plot(t,v1E,'g-', t,pd1E,'b-', t,pm1E, 'r-', t,true,'k-')
 legend('Viterbi', 'decoding','mean','truth')
+legend('Location', 'North')
 hold off
 
 figure;
@@ -92,6 +97,7 @@ xlabel('locus')
 ylabel('TMRCA')
 plot(t,v2E,'g-', t,pd2E,'b-', t,pm2E, 'r-', t,true,'k-')
 legend('Viterbi', 'decoding','mean','truth')
+legend('Location', 'North')
 
 hold off
 
@@ -102,6 +108,7 @@ xlabel('locus')
 ylabel('TMRCA')
 plot(t,v4E,'g-', t,pd4E,'b-', t,pm4E, 'r-', t,true,'k-')
 legend('Viterbi', 'decoding','mean','truth')
+legend('Location', 'North')
 hold off
 
 figure;
@@ -111,6 +118,7 @@ xlabel('locus')
 ylabel('TMRCA')
 plot(t,v5E,'g-', t,pd5E,'b-', t,pm5E, 'r-', t,true,'k-')
 legend('Viterbi', 'decoding','mean','truth')
+legend('Location', 'North')
 hold off
-
+ 
 end
