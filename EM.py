@@ -381,10 +381,14 @@ def main():
 
 	parameter_output_filename = "outputs/estimated_parameters" + sequence_type
 	parameter_output_file = open(parameter_output_filename, 'w')
-	parameter_output_file.write("pi_k_ml..........a_ij_ml..........e_k_ml\n")
-	parameter_output_file.write(str(new_params[0]) + ".........." + str(new_params[1]) + ".........." + str(new_params[2]))
+	parameter_output_file.write("pi_k_ml\n")
+	parameter_output_file.write(str(new_params[0]))
+	parameter_output_file.write("a_ij_ml\n")
+	parameter_output_file.write(str(new_params[1]))
+	parameter_output_file.write("e_k_ml\n")
+	parameter_output_file.write(str(new_params[2]))
 
-	likelihood_output_filename = "outputs/likelihood" + sequence_type
+	likelihood_output_filename = "outputs/likelihoods" + sequence_type
 	likelihood_output_file = open(likelihood_output_filename, 'w')
 	likelihood_output_file.write("Log-Likelihood with Initial Parameters\n")
 	likelihood_output_file.write(str(llf) + '\n')
